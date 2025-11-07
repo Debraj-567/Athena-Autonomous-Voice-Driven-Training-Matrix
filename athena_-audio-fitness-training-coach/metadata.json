@@ -1,0 +1,7 @@
+{
+  "name": "Athena: Audio-Fitness Training Coach",
+  "description": "An audio-first sports training application powered by Gemini, featuring adaptive voice coaching, real-time biometric feedback simulation, and a dynamic workout player UI.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}

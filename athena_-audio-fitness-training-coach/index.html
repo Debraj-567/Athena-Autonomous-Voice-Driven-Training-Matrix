@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Athena: Audio-First Training Coach</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  <script type="importmap">
+{
+  "imports": {
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.28.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0"
+  }
+}
+</script>
+<style>
+  @keyframes slideInFromRight {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+  @keyframes slideOutToLeft {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(-100%); opacity: 0; }
+  }
+  @keyframes slideInFromLeft {
+    from { transform: translateX(-100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+  @keyframes slideOutToRight {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(100%); opacity: 0; }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes fadeInUp {
+    from { transform: translateY(10px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  @keyframes pulse-subtle {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+  @keyframes glow {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  @keyframes pulse-ring {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(147, 51, 234, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(147, 51, 234, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(147, 51, 234, 0); }
+  }
+  @keyframes energy-flow {
+    0% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  .reflection-container::after {
+    content: attr(data-text);
+    position: absolute;
+    bottom: -5px;
+    left: 0;
+    width: 100%;
+    transform: scaleY(-1);
+    transform-origin: bottom;
+    opacity: 0.1;
+    -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 80%);
+    mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 80%);
+  }
+
+  .animate-slide-in-right { animation: slideInFromRight 0.4s ease-out forwards; }
+  .animate-slide-out-left { animation: slideOutToLeft 0.4s ease-out forwards; }
+  .animate-slide-in-left { animation: slideInFromLeft 0.4s ease-out forwards; }
+  .animate-slide-out-right { animation: slideOutToRight 0.4s ease-out forwards; }
+  .animate-fade-in { animation: fadeIn 0.5s ease-in-out forwards; }
+  .animate-fade-in-up { animation: fadeInUp 0.5s ease-out forwards; }
+  .animate-pulse-subtle { animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+  
+  /* --- Stick Figure Styles --- */
+  .stick-figure-container {
+    position: relative;
+    width: 8px; /* Torso width */
+    height: 40px; /* Torso height */
+  }
+  .stick-figure-container > div {
+    position: absolute;
+    transform-origin: center top;
+  }
+  .stick-figure-container .head {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    left: 50%;
+    transform: translateX(-50%);
+    top: -20px;
+  }
+  .stick-figure-container .torso {
+    width: 100%;
+    height: 100%;
+    left: 0;
+    top: 0;
+  }
+  .stick-figure-container .arm, .stick-figure-container .leg {
+    width: 6px;
+    height: 35px;
+    left: 1px;
+    border-radius: 3px;
+  }
+  .stick-figure-container .arm {
+    top: 0;
+  }
+  .stick-figure-container .leg {
+    top: 100%;
+    transform-origin: center top;
+  }
+  .stick-figure-container .arm.left, .stick-figure-container .leg.left {
+    transform-origin: right top;
+  }
+  .stick-figure-container .arm.right, .stick-figure-container .leg.right {
+    transform-origin: left top;
+  }
+
+  /* --- JUMPING JACK ANIMATION --- */
+  @keyframes jump-arm-left { 0%, 100% { transform: rotate(20deg); } 50% { transform: rotate(-160deg); } }
+  @keyframes jump-arm-right { 0%, 100% { transform: rotate(-20deg); } 50% { transform: rotate(160deg); } }
+  @keyframes jump-leg-left { 0%, 100% { transform: rotate(10deg); } 50% { transform: rotate(45deg); } }
+  @keyframes jump-leg-right { 0%, 100% { transform: rotate(-10deg); } 50% { transform: rotate(-45deg); } }
+  .anim-jumping-jack .arm.left { animation: jump-arm-left 1.5s ease-in-out infinite; }
+  .anim-jumping-jack .arm.right { animation: jump-arm-right 1.5s ease-in-out infinite; }
+  .anim-jumping-jack .leg.left { animation: jump-leg-left 1.5s ease-in-out infinite; }
+  .anim-jumping-jack .leg.right { animation: jump-leg-right 1.5s ease-in-out infinite; }
+
+  /* --- SQUAT ANIMATION --- */
+  @keyframes squat-figure { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(20px); } }
+  .anim-squat .stick-figure-container { animation: squat-figure 2s ease-in-out infinite; }
+  .anim-squat .arm { transform: rotate(-90deg) translateX(-10px) translateY(10px); }
+
+  /* --- PUSH-UP ANIMATION --- */
+  @keyframes pushup-figure { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(15px); } }
+  .anim-pushup { transform: rotate(90deg); }
+  .anim-pushup .stick-figure-container { animation: pushup-figure 2s ease-in-out infinite; }
+  .anim-pushup .head { top: -10px; left: 35px; }
+  .anim-pushup .arm { top: 0; left: 10px; transform: rotate(-90deg); }
+  .anim-pushup .leg { top: 100%; }
+  
+  /* --- HIGH KNEES ANIMATION --- */
+  @keyframes high-knee-leg-left { 0%, 100% { transform: rotate(5deg); } 25% { transform: rotate(-80deg); } 50% { transform: rotate(5deg); } 75% { transform: rotate(15deg); } }
+  @keyframes high-knee-leg-right { 0%, 100% { transform: rotate(-5deg); } 25% { transform: rotate(15deg); } 50% { transform: rotate(-5deg); } 75% { transform: rotate(-80deg); } }
+  @keyframes high-knee-arm-left { 0%, 100% { transform: rotate(20deg); } 25% { transform: rotate(70deg); } 50% { transform: rotate(20deg); } 75% { transform: rotate(-70deg); } }
+  @keyframes high-knee-arm-right { 0%, 100% { transform: rotate(-20deg); } 25% { transform: rotate(-70deg); } 50% { transform: rotate(-20deg); } 75% { transform: rotate(70deg); } }
+  .anim-high-knees .leg.left { animation: high-knee-leg-left 1s linear infinite; }
+  .anim-high-knees .leg.right { animation: high-knee-leg-right 1s linear infinite; }
+  .anim-high-knees .arm.left { animation: high-knee-arm-left 1s linear infinite; }
+  .anim-high-knees .arm.right { animation: high-knee-arm-right 1s linear infinite; }
+
+  /* --- PLANK --- */
+  .anim-plank { transform: rotate(90deg); }
+  .anim-plank .head { top: -10px; left: 35px; }
+  .anim-plank .arm { top: 0; left: 10px; transform: rotate(-90deg); }
+  .anim-plank .leg { top: 100%; }
+
+  /* --- NEW ANIMATIONS --- */
+  /* --- ARM CIRCLES --- */
+  @keyframes arm-circle-anim { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  .anim-arm-circles .arm { animation: arm-circle-anim 2s linear infinite; }
+  
+  /* --- STRETCHES (STATIC POSES) --- */
+  .anim-quad-stretch .leg.right { transform: rotate(-90deg) translateY(-5px); }
+  .anim-quad-stretch .arm.right { transform: rotate(-135deg) translateX(5px) translateY(-20px); }
+  .anim-hamstring-stretch { transform: translateY(15px); }
+  .anim-hamstring-stretch .torso { transform: rotate(90deg) translateY(-20px); }
+  .anim-hamstring-stretch .leg.left { transform: rotate(90deg) translateY(-20px); }
+  .anim-hamstring-stretch .arm { transform: rotate(90deg) translateY(-20px); }
+  .anim-child-pose { transform: translateY(30px) scale(0.8); }
+  .anim-child-pose .torso { transform: rotate(90deg) translateY(-20px); }
+  .anim-child-pose .leg { transform: rotate(-90deg) translateY(5px); }
+  .anim-child-pose .arm { transform: rotate(90deg) translateY(-20px) translateX(-20px); }
+  .anim-cobra-stretch { transform: rotate(90deg) translateY(-20px); }
+  .anim-cobra-stretch .torso { transform: rotate(-20deg); }
+  .anim-cobra-stretch .arm { transform: rotate(-70deg); }
+
+  /* --- BUTT KICKS --- */
+  @keyframes butt-kick-leg-left { 0%, 100% { transform: rotate(5deg); } 50% { transform: rotate(-120deg); } }
+  @keyframes butt-kick-leg-right { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } }
+  .anim-butt-kicks .leg.left { animation: butt-kick-leg-left 0.8s ease-in-out infinite alternate; }
+  .anim-butt-kicks .leg.right { animation: butt-kick-leg-right 0.8s ease-in-out infinite alternate-reverse; }
+
+  /* --- FAST FEET --- */
+  @keyframes fast-feet-leg { 0% { transform: rotate(5deg); } 25% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } 75% { transform: rotate(-5deg); } 100% { transform: rotate(5deg); } }
+  .anim-fast-feet .leg { animation: fast-feet-leg 0.2s linear infinite; }
+
+  /* --- BURPEES --- */
+  @keyframes burpee {
+    0%, 100% { /* stand */ transform: translateY(0); }
+    15% { /* squat */ transform: translateY(20px); }
+    30% { /* plank */ transform: translateY(20px) scaleX(2.5); }
+    45% { /* pushup */ transform: translateY(35px) scaleX(2.5); }
+    60% { /* plank */ transform: translateY(20px) scaleX(2.5); }
+    75% { /* squat */ transform: translateY(20px); }
+    90% { /* jump */ transform: translateY(-10px); }
+  }
+  .anim-burpees .stick-figure-container { animation: burpee 3s ease-in-out infinite; }
+
+  /* --- CORE WORK --- */
+  .anim-crunches { transform: rotate(90deg); }
+  @keyframes crunch-torso { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-25deg); } }
+  .anim-crunches .torso { animation: crunch-torso 2s ease-in-out infinite; }
+  .anim-crunches .leg { transform: rotate(-70deg); }
+  .anim-leg-raises { transform: rotate(90deg); }
+  @keyframes leg-raise { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-80deg); } }
+  .anim-leg-raises .leg { animation: leg-raise 2.5s ease-in-out infinite; }
+  .anim-russian-twists { transform: translateY(20px); }
+  @keyframes torso-twist { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(20deg); } }
+  .anim-russian-twists .torso { animation: torso-twist 2s ease-in-out infinite alternate; }
+  .anim-russian-twists .leg { transform: rotate(-45deg); }
+  
+  /* --- YOGA/MOBILITY --- */
+  .anim-cat-cow { transform: rotate(90deg) translateY(20px); }
+  @keyframes cat-cow-torso { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-20deg); } }
+  .anim-cat-cow .torso { animation: cat-cow-torso 3s ease-in-out infinite alternate; }
+  .anim-cat-cow .arm { transform: rotate(-90deg); }
+  .anim-cat-cow .leg { transform: rotate(-90deg); }
+
+  .anim-downward-dog { transform: rotate(-45deg) translateY(-20px) scale(0.9); }
+  .anim-downward-dog .arm { transform: rotate(-90deg); }
+  .anim-downward-dog .leg { transform: rotate(90deg); }
+
+  .anim-warrior-ii .leg.left { transform: rotate(90deg); }
+  .anim-warrior-ii .leg.right { transform: rotate(-10deg); }
+  .anim-warrior-ii .arm.left { transform: rotate(-90deg); }
+  .anim-warrior-ii .arm.right { transform: rotate(90deg); }
+
+</style>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body class="bg-black">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
